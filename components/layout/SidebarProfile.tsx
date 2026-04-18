@@ -1,11 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation"; // Menggantikan useNavigate
-import { API_BASE } from "../config";
-import { useAuth } from "../AuthContext";
+import { API_BASE } from "@/lib/config";
+import { useAuthStore } from "@/store/useAuthStore";
 import ProfilePhotoModal from "./ProfilePhotoModal";
 import UserBadge from "./UserBadge";
+
+type SidebarProfileProps = {
+  collapsed: boolean;
+  isAccountSetup?: boolean;
+  avatarPreview?: string;
+  avatarLabel?: string;
+  onAvatarClick?: () => void;
+  focusArticleSubnav?: boolean;
+  isFeatureArticleListPage?: boolean;
+};
 
 export default function SidebarProfile({
   collapsed,
@@ -15,12 +26,12 @@ export default function SidebarProfile({
   onAvatarClick,
   focusArticleSubnav,
   isFeatureArticleListPage,
-}) {
+}: SidebarProfileProps) {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const user = useAuthStore((state) => state.user);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [guestAuthSticky, setGuestAuthSticky] = useState(false);
-  const profileRef = useRef(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
 
   const isLoggedIn = !!user;
   const mediaBase = API_BASE || "https://api.telisik.org";
@@ -33,18 +44,16 @@ export default function SidebarProfile({
         ? `${mediaBase}/${user.avatar}`
         : user.avatar
       : "";
+  const avatarSrc = avatarPreview || user?.avatar || "";
 
   useEffect(() => {
-    if (isLoggedIn) {
-      setGuestAuthSticky(false);
-      return;
-    }
+    if (isLoggedIn) return;
 
     const node = profileRef.current;
     if (!node || typeof window === "undefined") return;
 
-    const findScrollParent = (node) => {
-      let current = node.parentElement;
+    const findScrollParent = (currentNode: HTMLElement | null): HTMLElement | Window => {
+      let current = currentNode?.parentElement ?? null;
       while (current) {
         const styles = window.getComputedStyle(current);
         const overflowY = styles.overflowY;
@@ -58,10 +67,15 @@ export default function SidebarProfile({
 
     const scrollParent = findScrollParent(node);
 
+    const getScrollTop = () => {
+      if ("scrollTop" in scrollParent) {
+        return scrollParent.scrollTop;
+      }
+      return window.scrollY || document.documentElement.scrollTop || 0;
+    };
+
     const handleScroll = () => {
-      const windowScrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-      const parentScrollTop = scrollParent !== window && scrollParent ? scrollParent.scrollTop : 0;
-      const scrollTop = Math.max(windowScrollTop, parentScrollTop);
+      const scrollTop = getScrollTop();
 
       const isDesktop = window.matchMedia("(min-width: 768px)").matches;
       setGuestAuthSticky(isDesktop && scrollTop > 4);
@@ -93,10 +107,13 @@ export default function SidebarProfile({
               onClick={onAvatarClick || (() => setShowPhotoModal(true))}
               className="mb-4 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full! border border-[#dcec80] bg-[#efffb7] text-[#a0a176] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)] transition-all duration-300 hover:brightness-[0.99]"
             >
-              {avatarPreview || user.avatar ? (
-                <img
-                  src={avatarPreview || user.avatar}
-                  alt={avatarLabel}
+              {avatarSrc ? (
+                <Image
+                  src={avatarSrc}
+                  alt={avatarLabel || "Avatar"}
+                  width={112}
+                  height={112}
+                  unoptimized
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -141,7 +158,14 @@ export default function SidebarProfile({
           className={`sidebar-nav-default__auth cursor-pointer text-left ${guestAuthSticky ? "sidebar-nav-default__auth--sticky" : ""}`}
           onClick={() => router.push("/login")}
         >
-          <img src="/login.svg" alt="Login" className="sidebar-nav-default__auth-icon" style={{ transition: "all 0.3s ease" }} />
+          <Image
+            src="/login.svg"
+            alt="Login"
+            width={24}
+            height={24}
+            className="sidebar-nav-default__auth-icon"
+            style={{ transition: "all 0.3s ease" }}
+          />
           {!collapsed && (
             <div className="sidebar-nav-default__auth-copy">
               <div className="sidebar-nav-default__auth-title">Sila Masuk/Mendaftar</div>

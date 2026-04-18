@@ -68,7 +68,7 @@ export default function DesktopActions() {
   );
 
   return (
-    <div className="hidden lg:flex items-center gap-4 shrink-0 pr-3">
+    <div className="hidden lg:flex items-center gap-4 shrink-0">
       <button className="inline-flex items-center justify-center gap-1.5 px-4 py-[6px] text-[15px] font-base text-white bg-[#FC6736] rounded-full hover:-translate-y-[1px] hover:shadow-[0_8px_18px_rgba(252,103,54,0.18)] transition-all">
         
         <svg 

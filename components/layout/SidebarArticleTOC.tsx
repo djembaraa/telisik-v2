@@ -1,15 +1,41 @@
 "use client";
 
 import React from "react";
-import { useAuth } from "../AuthContext";
+import { useAuthStore } from "@/store/useAuthStore";
 
-export default function SidebarArticleTOC({ articleTOC, collapsed, showTOC }) {
-  const { user } = useAuth();
+type ArticleTOCItem = {
+  id: string | number;
+  title: string;
+  key: string | number;
+};
+
+type TOCIconType = "section" | "footnotes" | "history" | "comments";
+
+type SidebarArticleTOCProps = {
+  articleTOC?: ArticleTOCItem[];
+  collapsed: boolean;
+  showTOC: boolean;
+};
+
+type ArticleNavigationItem = {
+  id: string | number;
+  label: string;
+  targetId: string;
+  iconType: TOCIconType;
+  badge?: string;
+};
+
+export default function SidebarArticleTOC({
+  articleTOC = [],
+  collapsed,
+  showTOC,
+}: SidebarArticleTOCProps) {
+  const user = useAuthStore((state) => state.user);
   const isLoggedIn = !!user;
 
   if (!showTOC) return null;
 
-  const scrollArticleTarget = (targetId) => {
+  const scrollArticleTarget = (targetId: string) => {
     const target = document.getElementById(targetId);
     const middleCol = document.getElementById("middle-col-scroll");
 
@@ -21,7 +47,7 @@ export default function SidebarArticleTOC({ articleTOC, collapsed, showTOC }) {
     }
   };
 
-  const renderArticleTOCIcon = (type = "section") => {
+  const renderArticleTOCIcon = (type: TOCIconType = "section") => {
     if (type === "footnotes") {
       return (
         <span className="sidebar-nav-article__glyph sidebar-nav-article__glyph--footnotes">
@@ -56,13 +82,17 @@ export default function SidebarArticleTOC({ articleTOC, collapsed, showTOC }) {
     );
   };
 
-  const articleNavigationItems = [
-    ...articleTOC.map((item) => ({
+  const sectionItems = articleTOC.map(
+    (item): ArticleNavigationItem => ({
       id: item.id,
       label: item.title,
       targetId: `section-${item.key}`,
       iconType: "section",
-    })),
+    })
+  );
+
+  const articleNavigationItems: ArticleNavigationItem[] = [
+    ...sectionItems,
     {
       id: "catatankaki",
       label: "Catatan Kaki",

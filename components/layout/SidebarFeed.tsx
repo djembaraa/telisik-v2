@@ -2,17 +2,51 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { API_BASE } from "../config";
+import Image from "next/image";
+import { parseJsonResponse, resolveApiBase, resolveApiUrl } from "@/lib/api";
 import UserBadge from "./UserBadge";
 
+type FeedUser = {
+  display_name?: string;
+  avatar?: string;
+};
+
+type FeedImage = {
+  id?: string | number;
+  url?: string;
+};
+
+type FeedItem = {
+  article_id?: string | number;
+  paragraph_id?: string;
+  created_by?: FeedUser;
+  created_at?: string;
+  article_title?: string;
+  comment?: string;
+  images?: FeedImage[];
+  image?: string;
+  article_comments_count?: number;
+  article_share_count?: number;
+  object_type?: string;
+  article_type?: string;
+  article_slug?: string;
+};
+
+type SidebarFeedProps = {
+  showFeed?: boolean;
+  focusArticleSubnav?: boolean;
+  collapsed?: boolean;
+};
+
 // Helper functions dipindah ke luar agar tidak render ulang berulang kali
-const truncateText = (text, maxLength = 100) => {
+const truncateText = (text: string, maxLength = 100) => {
   if (!text) return "";
   if (text.length > maxLength) return text.substring(0, maxLength) + "...";
   return text;
 };
 
-const timeAgo = (dateString) => {
+const timeAgo = (dateString?: string) => {
+  if (!dateString) return "just now";
   const now = new Date();
   const past = new Date(dateString);
   const seconds = Math.floor((now.getTime() - past.getTime()) / 1000);
@@ -29,22 +63,35 @@ const timeAgo = (dateString) => {
   return "just now";
 };
 
-export default function SidebarFeed({ showFeed, focusArticleSubnav, collapsed }) {
-  const [feedItems, setFeedItems] = useState([]);
+export default function SidebarFeed({
+  showFeed = true,
+  focusArticleSubnav = false,
+  collapsed = false,
+}: SidebarFeedProps) {
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   
-  const mediaBase = API_BASE || "https://api.telisik.org";
+  const mediaBase = resolveApiBase() || "https://api.telisik.org";
 
   const fetchFeedItems = async (page = 1, append = false) => {
     if (page === 1) setLoading(true);
     else setLoadingMore(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/latest-comments/?page=${page}&limit=10`);
-      const data = await response.json();
+      const response = await fetch(
+        resolveApiUrl(`/api/latest-comments/?page=${page}&limit=10`),
+      );
+      if (!response.ok) {
+        setHasMore(false);
+        return;
+      }
+      const data = await parseJsonResponse<{
+        results?: FeedItem[];
+        has_next?: boolean;
+      }>(response);
       if (append) {
         setFeedItems((prev) => [...prev, ...(data.results || [])]);
       } else {
@@ -62,7 +109,10 @@ export default function SidebarFeed({ showFeed, focusArticleSubnav, collapsed })
 
   useEffect(() => {
     if (!showFeed || focusArticleSubnav) return;
-    fetchFeedItems(1);
+    const timer = window.setTimeout(() => {
+      void fetchFeedItems(1);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [showFeed, focusArticleSubnav]);
 
   const handleLoadMore = () => {
@@ -71,7 +121,7 @@ export default function SidebarFeed({ showFeed, focusArticleSubnav, collapsed })
     }
   };
 
-  const getArticleUrl = (item) => {
+  const getArticleUrl = (item: FeedItem) => {
     if (item.object_type === "diskursus") return `/diskursus/${item.article_slug}`;
     return `/article/${item.article_type}/${item.article_slug}`;
   };
@@ -97,7 +147,7 @@ export default function SidebarFeed({ showFeed, focusArticleSubnav, collapsed })
               <div className="mb-0.5" style={{ fontSize: "0.95rem", color: "#6b7280", marginBottom: "4px" }}>
                 Merespons{" "}
                 <Link href={getArticleUrl(item)} className="no-underline text-[#0088FF]" style={{ color: "#0088FF" }}>
-                  {truncateText(item.paragraph_id, 40) || "#000000-000"}
+                  {truncateText(item.paragraph_id ?? "", 40) || "#000000-000"}
                 </Link>
               </div>
 
@@ -115,13 +165,13 @@ export default function SidebarFeed({ showFeed, focusArticleSubnav, collapsed })
               <div>
                 <h6 className="mb-1 font-bold" style={{ fontSize: "1.1rem", lineHeight: "1.3" }}>
                   <Link href={getArticleUrl(item)} className="no-underline" style={{ color: "#f97316" }}>
-                    {truncateText(item.article_title, 60) || "Heading (Opsional)"}
+                    {truncateText(item.article_title ?? "", 60) || "Heading (Opsional)"}
                   </Link>
                 </h6>
               </div>
               <div>
                 <p className="mb-1 " style={{ fontSize: "1.05rem", lineHeight: "1.5", color: "#4b5563" }}>
-                  {truncateText(item.comment, 150) || "Feed default ipsum dolor sit amet"}
+                  {truncateText(item.comment ?? "", 150) || "Feed default ipsum dolor sit amet"}
                 </p>
               </div>
 
@@ -145,7 +195,15 @@ export default function SidebarFeed({ showFeed, focusArticleSubnav, collapsed })
 
               {item.image && (
                 <div className="mb-2">
-                  <img src={item.image} alt="preview" className="w-full rounded-sm" style={{ maxHeight: "160px", objectFit: "cover", width: "100%" }} />
+                  <Image
+                    src={item.image}
+                    alt="preview"
+                    width={640}
+                    height={360}
+                    className="w-full rounded-sm"
+                    style={{ maxHeight: "160px", objectFit: "cover", width: "100%" }}
+                    unoptimized
+                  />
                 </div>
               )}
 

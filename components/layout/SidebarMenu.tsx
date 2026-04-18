@@ -1,44 +1,66 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ICONS } from "../config";
-import { useAuth } from "../AuthContext";
+import { ICONS } from "@/lib/icons";
+import { useAuthStore } from "@/store/useAuthStore";
+
+type SidebarMenuProps = {
+  collapsed?: boolean;
+  isAccountSetup?: boolean;
+  customMenuIcons?: Record<string, string>;
+  focusArticleSubnav?: boolean;
+  onToggle?: () => void;
+  showMenuToggle?: boolean;
+};
+
+type MenuRowConfig = {
+  label: string;
+  icon: string;
+  iconSrc?: string;
+  to?: string;
+  muted?: boolean;
+  expandable?: boolean;
+  expanded?: boolean;
+  onClick?: () => void;
+  disabled?: boolean;
+  compact?: boolean;
+  iconClassName?: string;
+  hideChevron?: boolean;
+};
 
 export default function SidebarMenu({
-  collapsed,
-  isAccountSetup,
-  customMenuIcons,
-  focusArticleSubnav,
+  collapsed = false,
+  isAccountSetup = false,
+  customMenuIcons = {},
+  focusArticleSubnav = false,
   onToggle,
-  showMenuToggle,
-}) {
+  showMenuToggle = true,
+}: SidebarMenuProps) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const safePathname = pathname ?? "";
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const isLoggedIn = !!user;
 
   const [akunExpanded, setAkunExpanded] = useState(false);
   const [sumbangsihExpanded, setSumbangsihExpanded] = useState(false);
 
-  const isFeatureArticleListPage = /^\/article\/(kronik|tilik)\/?$/.test(pathname);
   const useExpandedArticleDesktopMenuTone = focusArticleSubnav && !collapsed;
 
-  const isActive = (path) => pathname === path;
-  const isAnyChildActive = (paths) => paths.some((path) => pathname === path);
+  const isActive = (path: string) => safePathname === path;
+  const isAnyChildActive = (paths: string[]) =>
+    paths.some((path) => safePathname === path);
 
   const akunChildPaths = ["/complete-profile", "/buat-akun", "/settings"];
   const sumbangsihChildPaths = ["/kronik", "/tilik", "/diskursus", "/tanggapan"];
   const isAkunActive = isAnyChildActive(akunChildPaths);
   const isSumbangsihActive = isAnyChildActive(sumbangsihChildPaths);
 
-  useEffect(() => {
-    if (isAkunActive) setAkunExpanded(true);
-  }, [isAkunActive]);
-
-  useEffect(() => {
-    if (isSumbangsihActive) setSumbangsihExpanded(true);
-  }, [isSumbangsihActive]);
+  const resolvedAkunExpanded = isAkunActive || akunExpanded;
+  const resolvedSumbangsihExpanded = isSumbangsihActive || sumbangsihExpanded;
 
   const renderDefaultMenuRow = ({
     label,
@@ -53,7 +75,7 @@ export default function SidebarMenu({
     compact = false,
     iconClassName = "",
     hideChevron = false,
-  }) => {
+  }: MenuRowConfig) => {
     const sharedClassName = [
       !focusArticleSubnav ? "sidebar-nav-default__item " : "sidebar-nav-default__item-toc",
       muted ? "sidebar-nav-default__item--muted" : "",
@@ -69,7 +91,14 @@ export default function SidebarMenu({
       <>
         {iconSrc ? (
           <span className={`sidebar-nav-default__icon ${iconClassName}`.trim()} aria-hidden="true">
-            <img src={iconSrc} alt="" className="h-[16px] w-[16px] object-contain" />
+            <Image
+              src={iconSrc}
+              alt=""
+              width={16}
+              height={16}
+              className="h-[16px] w-[16px] object-contain"
+              unoptimized
+            />
           </span>
         ) : (
           <span className={`sidebar-nav-default__icon ${iconClassName}`.trim()} dangerouslySetInnerHTML={{ __html: icon }} />
@@ -108,13 +137,13 @@ export default function SidebarMenu({
               icon: ICONS.user,
               iconSrc: customMenuIcons.akunku,
               expandable: true,
-              expanded: akunExpanded,
-              onClick: () => setAkunExpanded(!akunExpanded),
+              expanded: resolvedAkunExpanded,
+              onClick: () => setAkunExpanded((prev) => !prev),
               muted: useExpandedArticleDesktopMenuTone ? false : !isAkunActive,
               hideChevron: isAccountSetup,
             })}
 
-            {akunExpanded && (
+            {resolvedAkunExpanded && (
               <div className={`${isAccountSetup ? "sidebar-nav-default__submenu--account-setup" : "sidebar-nav-default__submenu"}`}>
                 {isAccountSetup && <div className="w-full h-0 border-[0.5px] border-t border-[#e2e1bc] my-2" />}
                 <Link
@@ -122,7 +151,14 @@ export default function SidebarMenu({
                   className={`sidebar-nav-default__subitem ${isActive("/complete-profile") || isActive("/buat-akun") ? "sidebar-nav-default__subitem--active" : ""} ${isAccountSetup ? "sidebar-nav-default__subitem--account-setup" : ""}`}
                 >
                   {isAccountSetup && customMenuIcons.biodata ? (
-                    <img src={customMenuIcons.biodata} alt="" aria-hidden="true" className="h-[14px]! w-[14px]! shrink-0 object-contain" />
+                    <Image
+                      src={customMenuIcons.biodata}
+                      alt=""
+                      width={14}
+                      height={14}
+                      className="h-[14px]! w-[14px]! shrink-0 object-contain"
+                      unoptimized
+                    />
                   ) : null}
                   Biodata
                 </Link>
@@ -132,7 +168,14 @@ export default function SidebarMenu({
                   className={`sidebar-nav-default__subitem ${isActive("/settings") ? "sidebar-nav-default__subitem--active" : ""} ${isAccountSetup ? "sidebar-nav-default__subitem--account-setup" : ""}`}
                 >
                   {isAccountSetup && customMenuIcons.pengaturan ? (
-                    <img src={customMenuIcons.pengaturan} alt="" aria-hidden="true" className="h-[14px]! w-[14px]! shrink-0 object-contain" />
+                    <Image
+                      src={customMenuIcons.pengaturan}
+                      alt=""
+                      width={14}
+                      height={14}
+                      className="h-[14px]! w-[14px]! shrink-0 object-contain"
+                      unoptimized
+                    />
                   ) : null}
                   Pengaturan & Privasi
                 </Link>
@@ -144,13 +187,13 @@ export default function SidebarMenu({
               label: "Sumbangsih",
               icon: ICONS.edit,
               expandable: true,
-              expanded: sumbangsihExpanded,
-              onClick: () => setSumbangsihExpanded(!sumbangsihExpanded),
+              expanded: resolvedSumbangsihExpanded,
+              onClick: () => setSumbangsihExpanded((prev) => !prev),
               muted: useExpandedArticleDesktopMenuTone ? false : !isSumbangsihActive,
               hideChevron: isAccountSetup,
             })}
 
-            {sumbangsihExpanded && (
+            {resolvedSumbangsihExpanded && (
               <div className="sidebar-nav-default__submenu">
                 <Link href="/kronik" className={`sidebar-nav-default__subitem ${isActive("/kronik") ? "sidebar-nav-default__subitem--active" : ""}`}>Kronik</Link>
                 <Link href="/tilik" className={`sidebar-nav-default__subitem ${isActive("/tilik") ? "sidebar-nav-default__subitem--active" : ""}`}>Tilik</Link>

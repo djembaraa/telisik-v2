@@ -18,12 +18,7 @@ export default function DesktopMenu() {
           <Link
             key={item.id}
             href={item.href}
-            className={`group flex items-center gap-2 pr-5 px-4 py-2.5 rounded-xl uppercase text-base tracking-wide transition-all duration-200 ease-out
-              ${isActive 
-                ? "text-[#FC6736]"
-                : "text-[#555333] hover:text-[#FC6736]"
-              }
-            `}
+            className="group flex items-center gap-2 px-4 py-2.5 rounded-xl uppercase text-sm tracking-wide transition-all duration-200 ease-out"
           >
             <span
               className={`shrink-0 block w-[20px] h-[20px] ${
@@ -50,7 +45,15 @@ export default function DesktopMenu() {
               }
               aria-hidden="true"
             />
-            <span>{item.label}</span>
+            <span
+              className={`transition-colors duration-200 ease-out ${
+                isActive
+                  ? "text-[#FC6736]"
+                  : "text-[#555333] group-hover:text-[#FC6736]"
+              }`}
+            >
+              {item.label}
+            </span>
           </Link>
         );
       })}

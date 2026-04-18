@@ -6,8 +6,8 @@ import MobileTopBar from "./MobileTopBar";
 
 export default function Navbar() {
   return (
-    <header className="sticky lg:pl-3 top-0 z-[50] w-full bg-[#F9F6EF] dark:bg-[#403E3C] border-b border-neutral-200 dark:border-neutral-800">
-      <div className=" container mx-auto px-4 lg:px-3 h-[50px] lg:h-[65px] flex items-center justify-between">
+    <header className="sticky top-0 z-[50] w-full bg-[#F9F6EF] dark:bg-[#403E3C] border-b border-neutral-200 dark:border-neutral-800">
+      <div className="w-full px-4 lg:px-8 h-[50px] lg:h-[65px] flex items-center justify-between">
         <div className="hidden lg:flex items-center shrink-0">
           <Link href="/">
             <Image
@@ -15,12 +15,13 @@ export default function Navbar() {
               alt="Telisik Logo"
               width={80}
               height={48}
+              className="w-[60px] h-[32px] min-[1440px]:w-[78px] min-[1440px]:h-[46px]"
               priority
             />
           </Link>
         </div>
 
-        <div className="hidden lg:flex flex-1 justify-center">
+        <div className="hidden lg:flex flex-1 justify-center min-[1440px]:pr-34">
           <DesktopMenu />
         </div>
 
